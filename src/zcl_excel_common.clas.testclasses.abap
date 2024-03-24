@@ -1768,15 +1768,19 @@ CLASS lcl_string_to_date_and_time DEFINITION FINAL FOR TESTING
   RISK LEVEL HARMLESS.
 
   PRIVATE SECTION.
-    CONSTANTS date_20230803 TYPE d VALUE '20230803'.
-    CONSTANTS dbs1900_initial TYPE d VALUE '18991230'.   "Serial date 0 in (default) 1900 date base system
+    CONSTANTS dbs1900_initial   TYPE d VALUE '18991230'. "Serial date 0 in (default) 1900 date base system
     CONSTANTS dbs1900bc_initial TYPE d VALUE '18991231'. "Serial date 0 in 1900 backwards compatibility date base system
     CONSTANTS dbs1904bc_initial TYPE d VALUE '19040101'. "Serial date 0 in 1904 backwards compatibility date base system
+    CONSTANTS date_20230803 TYPE d VALUE '20230803'.
     CONSTANTS time_140711 TYPE t VALUE '140711'.
     CONSTANTS time_initial TYPE t VALUE '000000'.
+    CONSTANTS dbs1900_19000101 TYPE d VALUE '19000101'.  "Serial date 1 in (default) 1900 date base system
     CONSTANTS dbs1900_20230803_000000 TYPE string VALUE `45141.000000000000`. "Serial date 2023-08-03 time zero
-    CONSTANTS dbs1900_00000000_140711 TYPE string VALUE `0.588321759256`.     "Serial date zero time 14:07:11
+    CONSTANTS dbs1900_19000101_140711 TYPE string VALUE `1.588321759256`.     "Serial date 1901-01-01 time 14:07:11
     CONSTANTS dbs1900_20230803_140711 TYPE string VALUE `45141.588321759256`. "Serial date 2023-08-03 time 14:07:11
+    CONSTANTS timestamp_20230803_140711 TYPE zcl_excel_common=>ty_timestamp VALUE '20230803140711'.
+    CONSTANTS timestamp_20230803_000000 TYPE zcl_excel_common=>ty_timestamp VALUE '20230803000000'.
+    CONSTANTS timestamp_19000101_140711 TYPE zcl_excel_common=>ty_timestamp VALUE '19000101140711'.
 
     DATA cut TYPE REF TO zcl_excel_common.
     DATA excel_error TYPE REF TO zcx_excel.
@@ -1792,6 +1796,10 @@ CLASS lcl_string_to_date_and_time DEFINITION FINAL FOR TESTING
       datetime_to_time FOR TESTING RAISING cx_static_check,
       date_to_time FOR TESTING RAISING cx_static_check,
       time_to_date FOR TESTING RAISING cx_static_check.
+    METHODS:
+      datetime_to_timestamp FOR TESTING RAISING cx_static_check,
+      date_to_timestamp FOR TESTING RAISING cx_static_check,
+      time_to_timestamp FOR TESTING RAISING cx_static_check.
   ENDCLASS.
 
 
@@ -1820,7 +1828,7 @@ CLASS lcl_string_to_date_and_time IMPLEMENTATION.
   METHOD time_to_time.
     TRY.
         cl_abap_unit_assert=>assert_equals(
-            act   = cut->excel_string_to_time( dbs1900_00000000_140711 )
+            act   = cut->excel_string_to_time( dbs1900_19000101_140711 )
             exp   = time_140711 ).
       CATCH zcx_excel INTO excel_error.
         cl_abap_unit_assert=>fail( excel_error->get_text( ) ).
@@ -1860,14 +1868,40 @@ CLASS lcl_string_to_date_and_time IMPLEMENTATION.
   METHOD time_to_date.
     TRY.
         cl_abap_unit_assert=>assert_equals(
-            act   = cut->excel_string_to_date( dbs1900_00000000_140711 )
-            exp   = dbs1900_initial ).
-        cl_abap_unit_assert=>fail( 'Until dates before 1900-01-01 are supported, an exception is expected' ).
+            act   = cut->excel_string_to_date( dbs1900_19000101_140711 )
+            exp   = dbs1900_19000101 ).
       CATCH zcx_excel INTO excel_error.
-*        cl_abap_unit_assert=>fail( excel_error->get_text( ) ).
+        cl_abap_unit_assert=>fail( excel_error->get_text( ) ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD datetime_to_timestamp.
+    TRY.
         cl_abap_unit_assert=>assert_equals(
-            act = excel_error->get_text( )
-            exp = 'Unable to interpret date' ).
+            act   = cut->excel_string_to_timestamp( dbs1900_20230803_140711 )
+            exp   = timestamp_20230803_140711 ).
+      CATCH zcx_excel INTO excel_error.
+        cl_abap_unit_assert=>fail( excel_error->get_text( ) ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD date_to_timestamp.
+    TRY.
+        cl_abap_unit_assert=>assert_equals(
+            act   = cut->excel_string_to_timestamp( dbs1900_20230803_000000 )
+            exp   = timestamp_20230803_000000 ).
+      CATCH zcx_excel INTO excel_error.
+        cl_abap_unit_assert=>fail( excel_error->get_text( ) ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD time_to_timestamp.
+    TRY.
+        cl_abap_unit_assert=>assert_equals(
+            act   = cut->excel_string_to_timestamp( dbs1900_19000101_140711 )
+            exp   = timestamp_19000101_140711 ).
+      CATCH zcx_excel INTO excel_error.
+        cl_abap_unit_assert=>fail( excel_error->get_text( ) ).
     ENDTRY.
   ENDMETHOD.
 

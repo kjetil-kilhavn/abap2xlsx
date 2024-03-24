@@ -708,6 +708,7 @@ CLASS zcl_excel_worksheet DEFINITION
 *"* private components of class ZCL_EXCEL_WORKSHEET
 *"* do not include other source files here!!!
     TYPES ty_table_settings TYPE STANDARD TABLE OF zexcel_s_table_settings WITH DEFAULT KEY.
+    CONSTANTS c_typekind_timestamp TYPE abap_typekind VALUE 'Z'.
     DATA active_cell TYPE zexcel_s_cell_data .
     DATA charts TYPE REF TO zcl_excel_drawings .
     DATA columns TYPE REF TO zcl_excel_columns .
@@ -2267,6 +2268,9 @@ CLASS zcl_excel_worksheet IMPLEMENTATION.
         IF lv_format_code CA 'yd' OR lv_format_code EQ zcl_excel_style_number_format=>c_format_date_std.
           " DATE = yyyymmdd
           ls_style_conv-abap_type = cl_abap_typedescr=>typekind_date.
+          IF lv_format_code CA 'hs'.
+            ls_style_conv-abap_type = c_typekind_timestamp.
+          ENDIF.
         ELSEIF lv_format_code CA 'hs'.
           " TIME = hhmmss
           ls_style_conv-abap_type = cl_abap_typedescr=>typekind_time.
@@ -2327,6 +2331,8 @@ CLASS zcl_excel_worksheet IMPLEMENTATION.
             READ TABLE lt_style_conv INTO ls_style_conv WITH KEY cell_style = <ls_sheet_content>-cell_style BINARY SEARCH.
             IF sy-subrc EQ 0.
               CASE ls_style_conv-abap_type.
+                WHEN c_typekind_timestamp.
+                  <lv_data> = zcl_excel_common=>excel_string_to_timestamp( <ls_sheet_content>-cell_value ).
                 WHEN cl_abap_typedescr=>typekind_date.
                   <lv_data> = zcl_excel_common=>excel_string_to_date( <ls_sheet_content>-cell_value ).
                 WHEN cl_abap_typedescr=>typekind_time.
